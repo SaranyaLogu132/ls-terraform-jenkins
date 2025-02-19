@@ -12,7 +12,8 @@ pipeline {
             steps {
                 script {
                     // Detect branch name from Jenkins environment
-                    def branchName = 'feature'
+                    def branchName = sh(script: "echo ${GIT_BRANCH}", returnStdout: true).trim().replaceAll('origin/', '')
+                    echo branchName
 
                     // Clean previous workspace and clone specific branch
                     sh 'rm -rf ls-terraform-jenkins'
