@@ -1,10 +1,6 @@
 pipeline {
     agent any
 
-    parameters {
-        booleanParam(name: 'autoApprove', defaultValue: true, description: 'Automatically apply Terraform after plan?')
-    }
-
     environment {
         AWS_ACCESS_KEY_ID     = credentials('aws-access-key-id')
         AWS_SECRET_ACCESS_KEY = credentials('aws-secret-access-key')
@@ -15,27 +11,39 @@ pipeline {
         stage('Checkout') {
             steps {
                 script {
-                    git branch: 'feature', url: 'https://github.com/SaranyaLogu132/ls-terraform-jenkins'
+                    // Detect branch name from Jenkins environment
+                    def branchName = 'feature'
+
+                    // Clean previous workspace and clone specific branch
+                    sh 'rm -rf ls-terraform-jenkins'
+                    sh "git clone --single-branch --branch ${branchName} https://github.com/SaranyaLogu132/ls-terraform-jenkins.git"
+
+                    echo "Checked out branch: ${branchName}"
+                    env.BRANCH_NAME = branchName
                 }
             }
         }
-        
+
         stage('Terraform Init') {
             steps {
-                sh 'terraform init'
+                dir('ls-terraform-jenkins') {
+                    sh 'terraform init'
+                }
             }
         }
-        
+
         stage('Terraform Plan') {
             steps {
-                sh 'terraform plan -out=tfplan'
-                sh 'terraform show -no-color tfplan > tfplan.txt'
+                dir('ls-terraform-jenkins') {
+                    sh 'terraform plan -out=tfplan'
+                    sh 'terraform show -no-color tfplan > tfplan.txt'
+                }
             }
         }
-        
+
         stage('Approval for Apply') {
             when {
-                branch 'main'
+                expression { env.BRANCH_NAME == 'main' }
             }
             steps {
                 script {
@@ -43,13 +51,15 @@ pipeline {
                 }
             }
         }
-        
+
         stage('Terraform Apply') {
             when {
-                branch 'feature'
+                expression { env.BRANCH_NAME == 'main' }
             }
             steps {
-                sh 'terraform apply -input=false tfplan'
+                dir('ls-terraform-jenkins') {
+                    sh 'terraform apply -input=false tfplan'
+                }
             }
         }
     }
