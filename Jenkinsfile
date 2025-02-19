@@ -15,7 +15,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 script {
-                    git branch: 'main', url: 'https://github.com/SaranyaLogu132/ls-terraform-jenkins'
+                    git branch: 'feature', url: 'https://github.com/SaranyaLogu132/ls-terraform-jenkins'
                 }
             }
         }
